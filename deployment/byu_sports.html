@@ -1,0 +1,240 @@
+<script   src="http://code.jquery.com/jquery-2.2.4.min.js"   integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="   crossorigin="anonymous"></script>
+
+<div style='padding: 10px; overflow: auto; height: 380px;' id='sports_wrapper'>
+ <h2 class="text-white">Sports</h2>
+
+
+<style>
+#sports_wrapper {
+    position: relative;
+    width: 537px;
+    height: 400px;
+    background-color:#223f51;
+}
+#choose_sport {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color:#223f51;
+    border: none;
+    color: white;
+    font-size: 16px;
+}
+.logo_img {
+    display: block;
+    width: 150px;
+    height: 150px;
+    margin: 15px auto;
+}
+.team {
+    width: 50%;
+    float: left;
+}
+.team_name {
+    display: block;
+    width: 150px;
+    text-align: center;
+    margin: auto;
+    color: white;
+}
+.team_score {
+    display: block;
+    text-align: center;
+    width: 25px;
+    margin: 15px auto;
+    font-size: 26px;
+}
+.change {
+    position: absolute;
+    top: 50%;
+    cursor: pointer;
+}
+.change img {
+    height: 16px;
+}
+#future {
+    right: 10px;
+}
+#past {
+    left: 10px;
+}
+#game_date {
+    color: white;
+    margin-top: -40px;
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+#final_status {
+    position:absolute;
+    width: 150px;
+    left: 50%;
+    margin-left: -75px;
+    top: 50%;
+    margin-top: -15px;
+    font-size: 28px;
+    text-align: center;
+    color: white;
+}
+</style>
+    <span id='future' class='change'> <img src='sites/default/shared/code/dashboard/sports/images/right_arrow.png'/> </span>
+    <span id='past' class='change'> <img src='sites/default/shared/code/dashboard/sports/images/left_arrow.png'/> </span>
+    <select id='choose_sport'>
+
+    </select><br>
+    <input type='hidden' value='0' id='game_index'>
+    <h3 id='game_date'>Date</h3>
+    <div id='final_status'>win/lose</div>
+    <div id='byu' class='team'>
+        <img src='images/byu.png' class="logo_img" id='byu_img'/>
+        <span class='team_name'> BYU </span>
+        <span class='team_score' id='byu_score'></span>
+    </div>
+    <div id='other_team' class='team'>
+        <img src="images/sad_emoji.png" class="logo_img" id='opp_img' />
+        <span class='team_name' id='opp_name'> Opponent </span>
+        <span class='team_score' id='opp_score'></span>
+    </div>
+</div>
+<script>
+var sports_data;
+var sports_list;
+var sport;
+var index = 0;
+
+function UrlExists(url)
+{
+    var http = new XMLHttpRequest();
+    http.open('HEAD', url, false);
+    http.send();
+    return http.status!=404;
+}
+
+// Get desired sports from sports list 'byu_sports.json'
+function get_sports_list() {
+    return new Promise((resolve, reject) => {
+        $.getJSON('byu_sports.json', function(data) {
+            sports_list = data;
+            resolve()
+        })
+    })
+}
+// Get scraped data from 'byu_games.json'
+function get_sports_data() {
+    return new Promise((resolve, reject) => {
+        $.getJSON('byu_games.json', function(data) {
+            sports_data = data;
+            resolve()
+        });
+    })
+}
+// Show data for viewer
+function show_data(sport, index = 0, clicked = false) {
+    var today = new Date();
+    var current_game_info;
+    var game_index = 0;
+
+    if(clicked == true && index >= 0) {
+        current_game_info = sport[index]
+        game_index = sport.indexOf(current_game_info)
+}
+    else {
+        var current = false
+        $.each(sport, function(key, info) {
+            var game_date = new Date(info[0])
+            if (game_date >= today) {
+                return false
+            }
+            else if (game_date < today)
+            {
+                current_game_info = info;
+            }
+        })
+        if (typeof current_game_info == 'undefined') {
+            current_game_info = sport[0]
+        }
+        game_index = sport.indexOf(current_game_info)
+    }
+
+    var date = new Date(current_game_info[0])
+    $('#game_date').html(date.toDateString())
+    $('#opp_name').html(current_game_info[1])
+    image_url = "images/"+current_game_info[1].toLowerCase()+".png"
+    if(UrlExists(image_url)) {
+        $('#opp_img').attr('src', image_url)
+    } else {
+        $('#opp_img').attr('src', 'images/robot_face.png')
+    }
+    var score_regex = /\d-\d/;
+    if(score_regex.test(current_game_info[3])) {
+        var result = current_game_info[3].match(score_regex);
+        var scores = result[0].split('-')
+        $('#byu_score').html(scores[0]);
+        $('#opp_score').html(scores[1]);
+    }
+
+    $('#game_index').val(game_index)
+    if(current_game_info[3].indexOf('Loss') >= 0){
+        $('#final_status').html("Loss").css('color', 'red');
+        $('#byu_score').css('color', 'red');
+        $('#opp_score').css('color', 'red');
+    } else if (current_game_info[3].indexOf('Win') >= 0) {
+        $('#final_status').html("Win").css('color', 'lime');
+        $('#byu_score').css('color', 'lime');
+        $('#opp_score').css('color', 'lime');
+    } else if (current_game_info[3].indexOf('Tie') >= 0) {
+        $('#final_status').html("Tie").css('color', 'darkgrey');
+        $('#byu_score').css('color', 'darkgrey');
+        $('#opp_score').css('color', 'darkgrey');
+    } else {
+        $('#final_status').html(current_game_info[3]).css('color','white')
+        $('#byu_score').html('');
+        $('#opp_score').html('');
+    }
+
+}
+$(document).ready(function() {
+    get_sports_list()
+    .then(get_sports_data())
+    .then(function() {
+        $.each(sports_list, function(val, text) {
+            $('#choose_sport').append($('<option>').attr('value', val).text(text))
+        })
+        $('#choose_sport').change(function() {
+            sport = $(this).val();
+            selected_sport = sports_data[sport]
+            show_data(selected_sport)
+        })
+        $('#future').click(function() {
+            sport = $('#choose_sport').val();
+            index = $('#game_index').val()
+            selected_sport = sports_data[sport];
+            if (index < (selected_sport.length - 1)) {
+                index++;
+            }
+            show_data(selected_sport, index, true)
+        })
+        $('#past').click(function() {
+            sport = $('#choose_sport').val();
+            index = $('#game_index').val()
+            selected_sport = sports_data[sport]
+            index--
+            if (index >= 0) {
+                show_data(selected_sport, index, true)
+            }
+            else {
+                index = 0;
+            }
+        })
+    })
+    .then(function() {
+        // wait to make sure my global variable is set
+        // then show the first thing
+        setTimeout(function() {
+            sport = $('#choose_sport').val();
+            selected_sport = sports_data[sport]
+            show_data(selected_sport)
+        }, 100)
+    })
+
+});
+</script>

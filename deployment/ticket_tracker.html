@@ -1,0 +1,24 @@
+<style>
+#ticket-wrapper {
+    background-color: #f16655;
+    width: 537px;
+    height: 400px;
+}
+button {
+    float:right;
+}
+</style>
+<div id='ticket-wrapper'>
+<button>MyLink</button>
+<button>WebTeam</button>
+</div>
+<script>
+function get_ticket_info() {
+    return new Promise((resolve, reject) => {
+        $.getJSON('ticket_info.json', function(data) {
+            sports_list = data;
+            resolve(data)
+        })
+    })
+}
+</script>
